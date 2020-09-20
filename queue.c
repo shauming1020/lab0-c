@@ -12,11 +12,10 @@
 queue_t *q_new()
 {
     queue_t *q = malloc(sizeof(queue_t));
-    if (!q)
-        return NULL;
-
-    q->head = q->tail = NULL;
-    q->size = 0;
+    if (q) {
+        q->head = q->tail = NULL;
+        q->size = 0;
+    }
     return q;
 }
 
@@ -128,13 +127,14 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
     if (!q || !(q->head))
         return false;
 
-    list_ele_t *tmp = q->head;
-
     if (sp) {
-        strncpy(sp, tmp->value, bufsize - 1);
-        sp[bufsize - 1] = '\0';
+        int size = strlen(q->head->value) < bufsize ? strlen(q->head->value)
+                                                    : bufsize - 1;
+        strncpy(sp, q->head->value, size);
+        sp[size] = '\0';
     }
 
+    list_ele_t *tmp = q->head;
     q->head = q->head->next;
     if (q->size)
         q->size--;
@@ -189,23 +189,23 @@ void q_reverse(queue_t *q)
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-list_ele_t *SortedMerge(list_ele_t *a, list_ele_t *b)
+void SortedMerge(list_ele_t *a, list_ele_t *b, list_ele_t **headRef)
 {
-    if (a == NULL)
-        return (b);
-    else if (b == NULL)
-        return (a);
+    *headRef = NULL;
+    list_ele_t **result = headRef;
 
-    list_ele_t *result = NULL;
-
-    if (strcasecmp(a->value, b->value) < 0) {
-        result = a;
-        result->next = SortedMerge(a->next, b);
-    } else {
-        result = b;
-        result->next = SortedMerge(a, b->next);
+    while (a && b) {
+        if (strcasecmp(a->value, b->value) < 0) {
+            *result = a;
+            a = a->next;
+        } else {
+            *result = b;
+            b = b->next;
+        }
+        result = &((*result)->next);
     }
-    return (result);
+
+    (*result) = b ? b : a;
 }
 
 void MergeSort(list_ele_t **headRef)
@@ -234,7 +234,7 @@ void MergeSort(list_ele_t **headRef)
     MergeSort(&a);
     MergeSort(&b);
 
-    *headRef = SortedMerge(a, b);
+    SortedMerge(a, b, headRef);
 }
 
 void q_sort(queue_t *q)
